@@ -3,19 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <title>Monitor Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <h1>Real-time Metrics</h1>
+  <canvas id="cpuChart" width="300" height="100"></canvas>
   <pre id="output"></pre>
 
   <script>
     const output = document.getElementById('output');
+    const ctx = document.getElementById('cpuChart').getContext('2d');
+
+    // Khởi tạo biểu đồ Chart.js
+    const cpuChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [], // Tên metric
+        datasets: [{
+          label: 'CPU Usage (%)',
+          data: [], // Giá trị metric
+          backgroundColor: 'rgba(54, 162, 235, 0.7)'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                const index = context.dataIndex;
+                const label = context.chart.data.labels[index];
+                const value = context.dataset.data[index];
+                const description = context.chart.data.descriptions[index];
+                return `${label}: ${value}%\n${description || 'Không có mô tả'}`;
+              }
+            }
+          }
+        }
+      }
+    });
+
     const socket = new WebSocket('ws://' + window.location.host);
 
     socket.onmessage = function (event) {
       const data = JSON.parse(event.data);
       output.textContent = JSON.stringify(data, null, 2);
-      // Tại đây bạn có thể gọi update biểu đồ Chart.js
+
+      const labels = [];
+      const values = [];
+      const descriptions = [];
+
+      for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+          const entry = data[key];
+          labels.push(entry.name);
+          values.push(entry.value);
+          descriptions.push(entry.description || '');
+        }
+      }
+
+      cpuChart.data.labels = labels;
+      cpuChart.data.datasets[0].data = values;
+      cpuChart.data.descriptions = descriptions;
+      cpuChart.update();
     };
   </script>
 </body>
