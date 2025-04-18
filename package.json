@@ -1,0 +1,27 @@
+{
+    "name": "web-monitoring",
+    "version": "1.0.0",
+    "description": "A web application to monitor system metrics from a client machine.",
+    "main": "app.js",
+    "scripts": {
+      "start": "node app.js",
+      "dev": "nodemon app.js"
+    },
+    "keywords": [
+      "web",
+      "monitoring",
+      "metrics",
+      "express"
+    ],
+    "author": "Your Name",
+    "license": "ISC",
+    "dependencies": {
+      "express": "^4.18.2",
+      "socket.io": "^4.4.1",
+      "path": "^0.12.7"
+    },
+    "devDependencies": {
+      "nodemon": "^2.0.15"
+    }
+  }
+  

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitor Dashboard</title>
+</head>
+<body>
+  <h1>Real-time Metrics</h1>
+  <pre id="output"></pre>
+
+  <script>
+    const output = document.getElementById('output');
+    const socket = new WebSocket('ws://' + window.location.host);
+
+    socket.onmessage = function (event) {
+      const data = JSON.parse(event.data);
+      output.textContent = JSON.stringify(data, null, 2);
+      // Tại đây bạn có thể gọi update biểu đồ Chart.js
+    };
+  </script>
+</body>
+</html>
