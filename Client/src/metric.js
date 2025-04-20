@@ -1,67 +1,85 @@
+const { exec } = require("child_process");
+
 function getCPU() {
-  return new Promise((resolve) => {
-    // Dữ liệu giả lập dựa trên output từ lệnh `top`
-    const cpuRaw = "%Cpu(s):  3.5 us,  2.6 sy,  0.0 ni, 92.6 id,  0.0 wa,  0.0 hi,  1.3 si,  0.0 st";
+  return new Promise((resolve, reject) => {
+    exec(`top -bn1 | grep "Cpu(s)"`, (err, stdout) => {
+      if (err) return reject(err);
 
-    const labels = {
-      us: "User",
-      sy: "System",
-      ni: "Nice",
-      id: "Idle",
-      wa: "I/O Wait",
-      hi: "Hardware IRQ",
-      si: "Soft IRQ",
-      st: "Steal Time"
-    };
-    
-    const descriptions = {
-      us: "Thời gian CPU xử lý tiến trình của người dùng (user space)",
-      sy: "Thời gian CPU xử lý tiến trình của hệ thống (kernel space)",
-      id: "Thời gian CPU không làm gì (nhàn rỗi)",
-      wa: "CPU chờ I/O",
-      is: "Thời gian CPU xử lý ngắt phần cứng"
-     
-    };
-
-    const parts = cpuRaw
-      .replace('%Cpu(s):', '')
-      .split(',')
-      .map(part => part.trim());
-
-    const result = parts.map(part => {
-      const [value, key] = part.split(' ');
-      return {
-        name: labels[key],
-        key,
-        value: parseFloat(value),
-        description: descriptions[key]
+      const labels = {
+        us: "User",
+        sy: "System",
+        ni: "Nice",
+        id: "Idle",
+        wa: "I/O Wait",
+        hi: "Hardware IRQ",
+        si: "Soft IRQ",
+        st: "Steal Time"
       };
-    });
 
-    resolve(result);
+      const descriptions = {
+        us: "Thời gian CPU xử lý tiến trình của người dùng (user space)",
+        sy: "Thời gian CPU xử lý tiến trình của hệ thống (kernel space)",
+        ni: "Ưu tiên thấp hơn (nice)",
+        id: "Thời gian CPU không làm gì (nhàn rỗi)",
+        wa: "CPU chờ I/O",
+        hi: "Thời gian CPU xử lý ngắt phần cứng",
+        si: "Thời gian CPU xử lý ngắt phần mềm",
+        st: "CPU bị đánh cắp bởi máy ảo"
+      };
+
+      // Loại bỏ phần mở đầu và lấy giá trị phần trăm CPU
+      const parts = stdout
+        .replace('%Cpu(s):', '')
+        .replace('Cpu(s):', '')
+        .split(',')
+        .map(part => part.trim());
+
+      const result = parts.map(part => {
+        const [value, key] = part.split(' ');
+        return {
+          name: labels[key],
+          key,
+          value: parseFloat(value),
+          description: descriptions[key]
+        };
+      });
+
+      resolve(result);
+    });
   });
 }
 
 
 
+
 function getMemory() {
   return new Promise((resolve, reject) => {
-    // Giả lập Memory usage
-    resolve({
-      mem_total: '16G',
-      mem_used: '8G',
-      mem_free: '8G',
+    exec('free -h', (err, stdout) => {
+      if (err) return reject(err);
+      const lines = stdout.split('\n');
+      const memLine = lines.find(line => line.toLowerCase().startsWith('mem'));
+      if (!memLine) return resolve({});
+      const parts = memLine.split(/\s+/);
+      resolve({
+        mem_total: parts[1],
+        mem_used: parts[2],
+        mem_free: parts[3],
+      });
     });
   });
 }
 
 function getDisk() {
   return new Promise((resolve, reject) => {
-    // Giả lập Disk usage
-    resolve({
-      disk_used: '50G',
-      disk_avail: '150G',
-      disk_usage_percent: '25%',
+    exec('df -h /', (err, stdout) => {
+      if (err) return reject(err);
+      const lines = stdout.split('\n');
+      const data = lines[1].split(/\s+/);
+      resolve({
+        disk_used: data[2],
+        disk_avail: data[3],
+        disk_usage_percent: data[4],
+      });
     });
   });
 }
